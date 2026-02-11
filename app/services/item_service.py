@@ -5,25 +5,42 @@ from app.config import settings
 from app.models import Item, Slot
 from app.schemas import ItemBulkEntry, ItemCreate
 
-
-def add_item_to_slot(db: Session, slot_id: str, data: ItemCreate) -> Item:
+def add_item_to_slot(db: Session, slot_id: str, data: ItemCreate):
     slot = db.query(Slot).filter(Slot.id == slot_id).first()
     if not slot:
         raise ValueError("slot_not_found")
+
+    #FIX 1 — check if item already exists in slot
+    existing_item = next((i for i in slot.items if i.name == data.name), None)
+
+    if existing_item:
+        # only increase quantity
+        if slot.current_item_count + data.quantity > slot.capacity:
+            raise ValueError("capacity_exceeded")
+
+        existing_item.quantity += data.quantity
+        slot.current_item_count += data.quantity
+
+        db.commit()
+        db.refresh(existing_item)
+        return existing_item
+
+    #FIX 2 — create new item if not exists
     if slot.current_item_count + data.quantity > slot.capacity:
         raise ValueError("capacity_exceeded")
-    if slot.current_item_count + data.quantity < settings.MAX_ITEMS_PER_SLOT:
-        raise ValueError("capacity_exceeded")
+
     item = Item(
         name=data.name,
         price=data.price,
-        slot_id=slot_id,
         quantity=data.quantity,
+        slot_id=slot_id,
     )
+
     db.add(item)
     slot.current_item_count += data.quantity
     db.commit()
     db.refresh(item)
+
     return item
 
 

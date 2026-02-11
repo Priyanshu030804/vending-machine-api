@@ -36,6 +36,11 @@ def create_slot(data: SlotCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Slot limit reached")
         if str(e) == "slot_code_exists":
             raise HTTPException(status_code=409, detail="Slot code already exists")
+        #new errors introduced
+        if str(e) == "invalid_slot_code":
+            raise HTTPException(status_code=400, detail="Invalid slot code format")
+        if str(e) == "invalid_capacity":
+            raise HTTPException(status_code=400, detail="Capacity must be > 0")
         raise
 
 

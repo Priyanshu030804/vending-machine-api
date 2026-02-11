@@ -1,22 +1,40 @@
 from sqlalchemy.orm import Session
-
+import re
 from app.config import settings
 from app.models import Slot
 from app.schemas import SlotCreate, SlotFullView, SlotFullViewItem, SlotResponse
 
 
 def create_slot(db: Session, data: SlotCreate) -> Slot:
+    #validate slot code again (service level validation)
+    if not re.match(r"^[A-Z][0-9]+$", data.code):
+        raise ValueError("invalid_slot_code")
+
+    # enforce max slots
     count = db.query(Slot).count()
     if count >= settings.MAX_SLOTS:
         raise ValueError("slot_limit_reached")
+
+    # unique code check
     existing = db.query(Slot).filter(Slot.code == data.code).first()
     if existing:
         raise ValueError("slot_code_exists")
-    slot = Slot(code=data.code, capacity=data.capacity, current_item_count=0)
+
+    # capacity validation (missing bug)
+    if data.capacity <= 0:
+        raise ValueError("invalid_capacity")
+
+    slot = Slot(
+        code=data.code,
+        capacity=data.capacity,
+        current_item_count=0
+    )
+
     db.add(slot)
     db.commit()
     db.refresh(slot)
     return slot
+
 
 
 def list_slots(db: Session) -> list[Slot]:

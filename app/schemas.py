@@ -3,7 +3,9 @@ from pydantic import BaseModel, Field
 
 # --- Slot ---
 class SlotCreate(BaseModel):
-    code: str
+    # code: str
+    # capacity: int = Field(..., gt=0)
+    code: str = Field(..., pattern="^[A-Z][0-9]+$")
     capacity: int = Field(..., gt=0)
 
 

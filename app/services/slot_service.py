@@ -45,12 +45,18 @@ def get_slot_by_id(db: Session, slot_id: str) -> Slot | None:
     return db.query(Slot).filter(Slot.id == slot_id).first()
 
 
-def delete_slot(db: Session, slot_id: str) -> None:
-    slot = get_slot_by_id(db, slot_id)
+def delete_slot(db: Session, slot_id: str):
+    slot = db.query(Slot).filter(Slot.id == slot_id).first()
     if not slot:
         raise ValueError("slot_not_found")
+
+    #NEW FIX — check if slot has items
+    if slot.current_item_count > 0:
+        raise ValueError("slot_not_empty")
+
     db.delete(slot)
     db.commit()
+
 
 
 def get_full_view(db: Session) -> list[SlotFullView]:

@@ -68,9 +68,18 @@ def delete_slot(slot_id: str, db: Session = Depends(get_db)):
     try:
         slot_service.delete_slot(db, slot_id)
         return MessageResponse(message="Slot removed successfully")
+
     except ValueError as e:
         if str(e) == "slot_not_found":
             _slot_404()
+
+        # NEW ERROR HANDLING
+        if str(e) == "slot_not_empty":
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete slot with items"
+            )
+
         raise
 
 
